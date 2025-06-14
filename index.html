@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pramod Tech Video Call</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f1f1f1;
+      text-align: center;
+      padding: 20px;
+    }
+    video {
+      width: 45%;
+      margin: 10px;
+      border: 2px solid #333;
+      border-radius: 10px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>✨ Pramod Tech - Free Video Call ✨</h1>
+  <video id="myVideo" autoplay muted></video>
+  <video id="remoteVideo" autoplay></video><br />
+
+  <div>
+    <label>Your Room Code: <span id="roomId">...</span></label>
+    <br />
+    <button id="startBtn" disabled>Start Call</button>
+  </div>
+  <br />
+  <div>
+    <input id="joinInput" placeholder="Enter Room Code to Join" />
+    <button id="joinBtn" disabled>Join Room</button>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.3.2/dist/peerjs.min.js"></script>
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const joinBtn = document.getElementById("joinBtn");
+    const joinInput = document.getElementById("joinInput");
+    const roomIdEl = document.getElementById("roomId");
+    const myVideo = document.getElementById("myVideo");
+    const remoteVideo = document.getElementById("remoteVideo");
+
+    let peer;
+    let localStream;
+
+    async function setupMedia() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        myVideo.srcObject = stream;
+        localStream = stream;
+      } catch (err) {
+        alert("Could not access camera/microphone.");
+        console.error(err);
+      }
+    }
+
+    function initPeer() {
+      peer = new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on("open", (id) => {
+        roomIdEl.textContent = id;
+        startBtn.disabled = false;
+        joinBtn.disabled = false;
+      });
+
+      peer.on("call", (call) => {
+        call.answer(localStream);
+        call.on("stream", (remoteStream) => {
+          remoteVideo.srcObject = remoteStream;
+        });
+      });
+    }
+
+    startBtn.onclick = () => {
+      alert("Share this room code with your friend: " + peer.id);
+    };
+
+    joinBtn.onclick = () => {
+      const remoteId = joinInput.value.trim();
+      if (!remoteId) return alert("Enter a room code");
+
+      const call = peer.call(remoteId, localStream);
+      call.on("stream", (remoteStream) => {
+        remoteVideo.srcObject = remoteStream;
+      });
+    };
+
+    window.onload = async () => {
+      await setupMedia();
+      initPeer();
+    };
+  </script>
+</body>
+</html>
